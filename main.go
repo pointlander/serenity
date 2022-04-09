@@ -17,30 +17,22 @@ const (
 	MemorySize = 1024 * 1024
 )
 
+// Program is a program
 // https://github.com/cvhariharan/goBrainFuck
-type cpu struct {
-	Program []rune
-	Output  strings.Builder
-}
+type Program []rune
 
-// NewCPU produces a new cpu
-func NewCPU(code string) *cpu {
-	c := &cpu{}
-	c.Program = []rune(code)
-	return c
-}
-
-func (c *cpu) execute() {
+// Execute executes a program
+func (p Program) Execute() *strings.Builder {
 	var (
 		memory [MemorySize]int
 		pc     int
 		dc     int
+		output strings.Builder
 	)
-	program := c.Program
-	length := len(program)
+	length := len(p)
 
 	for pc < length {
-		opcode := program[pc]
+		opcode := p[pc]
 		switch opcode {
 		case '+':
 			memory[dc] += 1
@@ -57,20 +49,20 @@ func (c *cpu) execute() {
 			}
 			pc++
 		case '.':
-			c.Output.WriteRune(rune(memory[dc]))
+			output.WriteRune(rune(memory[dc]))
 			pc++
 		case ',':
-			memory[dc] = c.input()
+			memory[dc] = p.input()
 			pc++
 		case '[':
 			if memory[dc] == 0 {
-				pc = c.findMatchingForward(pc) + 1
+				pc = p.findMatchingForward(pc) + 1
 			} else {
 				pc++
 			}
 		case ']':
 			if memory[dc] != 0 {
-				pc = c.findMatchingBackward(pc) + 1
+				pc = p.findMatchingBackward(pc) + 1
 			} else {
 				pc++
 			}
@@ -78,18 +70,18 @@ func (c *cpu) execute() {
 			pc++
 		}
 	}
+	return &output
 }
 
-func (c *cpu) findMatchingForward(position int) int {
-	program, count := c.Program, 1
-	length := len(program)
+func (p Program) findMatchingForward(position int) int {
+	count, length := 1, len(p)
 	for i := position + 1; i < length; i++ {
-		if program[i] == ']' {
+		if p[i] == ']' {
 			count--
 			if count == 0 {
 				return i
 			}
-		} else if program[i] == '[' {
+		} else if p[i] == '[' {
 			count++
 		}
 	}
@@ -97,15 +89,15 @@ func (c *cpu) findMatchingForward(position int) int {
 	return -1
 }
 
-func (c *cpu) findMatchingBackward(position int) int {
-	program, count := c.Program, 1
+func (p Program) findMatchingBackward(position int) int {
+	count := 1
 	for i := position - 1; i >= 0; i-- {
-		if program[i] == '[' {
+		if p[i] == '[' {
 			count--
 			if count == 0 {
 				return i
 			}
-		} else if program[i] == ']' {
+		} else if p[i] == ']' {
 			count++
 		}
 	}
@@ -113,7 +105,7 @@ func (c *cpu) findMatchingBackward(position int) int {
 	return -1
 }
 
-func (c *cpu) input() int {
+func (p Program) input() int {
 	reader := bufio.NewReader(os.Stdin)
 	char, _, err := reader.ReadRune()
 	if err != nil {
@@ -123,8 +115,8 @@ func (c *cpu) input() int {
 }
 
 func main() {
-	machine := NewCPU(`>++++++++[-<+++++++++>]<.>>+>-[+]++>++>+++[>[->+++<<+++>]<<]>-----.>-> Comments can be added
+	program := Program(`>++++++++[-<+++++++++>]<.>>+>-[+]++>++>+++[>[->+++<<+++>]<<]>-----.>-> Comments can be added
 +++..+++.>-.<<+[>[+>+]>>]<--------------.>>.+++.------.--------.>+.>+.`)
-	machine.execute()
-	fmt.Print(machine.Output.String())
+	output := program.Execute()
+	fmt.Print(output.String())
 }

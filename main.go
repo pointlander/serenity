@@ -8,13 +8,19 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
+	"sort"
 	"strings"
+
+	"github.com/texttheater/golang-levenshtein/levenshtein"
 )
 
 const (
 	// MemorySize is the size of the working memory
 	MemorySize = 1024 * 1024
+	// CyclesLimit is the limit on cycles
+	CyclesLimit = 1024 * 1024
 )
 
 // Program is a program
@@ -22,16 +28,17 @@ const (
 type Program []rune
 
 // Execute executes a program
-func (p Program) Execute() *strings.Builder {
+func (p Program) Execute(size int) *strings.Builder {
 	var (
 		memory [MemorySize]int
 		pc     int
 		dc     int
+		i      int
 		output strings.Builder
 	)
 	length := len(p)
 
-	for pc < length {
+	for pc < length && i < CyclesLimit {
 		opcode := p[pc]
 		switch opcode {
 		case '+':
@@ -50,6 +57,9 @@ func (p Program) Execute() *strings.Builder {
 			pc++
 		case '.':
 			output.WriteRune(rune(memory[dc]))
+			if len([]rune(output.String())) == size {
+				return &output
+			}
 			pc++
 		case ',':
 			memory[dc] = p.input()
@@ -69,6 +79,7 @@ func (p Program) Execute() *strings.Builder {
 		default:
 			pc++
 		}
+		i++
 	}
 	return &output
 }
@@ -114,9 +125,61 @@ func (p Program) input() int {
 	return int(char)
 }
 
+func Generate(rnd *rand.Rand, program *strings.Builder) {
+	count := rnd.Intn(16) + 1
+	for i := 0; i < count; i++ {
+		switch rnd.Intn(16) {
+		case 0, 1, 2, 3:
+			count := rnd.Intn(8) + 1
+			for j := 0; j < count; j++ {
+				program.WriteRune('+')
+			}
+		case 4, 5, 6, 7:
+			count := rnd.Intn(8) + 1
+			for j := 0; j < count; j++ {
+				program.WriteRune('-')
+			}
+		case 8:
+			program.WriteRune('>')
+		case 9:
+			program.WriteRune('<')
+		case 10:
+			program.WriteRune('.')
+		case 11:
+			program.WriteRune('[')
+			Generate(rnd, program)
+			program.WriteRune(']')
+		}
+	}
+}
+
+// Genome is a genome
+type Genome struct {
+	Program Program
+	Output  string
+	Fitness float64
+}
+
 func main() {
-	program := Program(`>++++++++[-<+++++++++>]<.>>+>-[+]++>++>+++[>[->+++<<+++>]<<]>-----.>-> Comments can be added
-+++..+++.>-.<<+[>[+>+]>>]<--------------.>>.+++.------.--------.>+.>+.`)
-	output := program.Execute()
-	fmt.Print(output.String())
+	rnd, target := rand.New(rand.NewSource(1)), []rune("Hello World!")
+	length := len(target)
+	genomes := make([]Genome, 0, 8)
+	for i := 0; i < 1024; i++ {
+		program := strings.Builder{}
+		Generate(rnd, &program)
+		code := Program(program.String())
+		output := code.Execute(length)
+		distance := levenshtein.DistanceForStrings([]rune(output.String()), target, levenshtein.DefaultOptions)
+		genomes = append(genomes, Genome{
+			Program: code,
+			Output:  output.String(),
+			Fitness: float64(distance),
+		})
+	}
+	sort.Slice(genomes, func(i, j int) bool {
+		return genomes[i].Fitness < genomes[j].Fitness
+	})
+	for _, genome := range genomes {
+		fmt.Printf("%f '%s'\n", genome.Fitness, genome.Output)
+	}
 }

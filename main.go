@@ -166,79 +166,52 @@ type Genome struct {
 }
 
 // InsertGene inserts a gene into a genome
-func InsertGene(rnd *rand.Rand, gene rune, i, index int, parent Program, child *strings.Builder) int {
+func (p Program) InsertGene(rnd *rand.Rand, gene rune, i, index int, child *strings.Builder) {
 	for i < index {
-		parentGene := parent[i]
+		child.WriteRune(p[i])
 		i++
-		child.WriteRune(parentGene)
-		switch parentGene {
-		case '[':
-			i = InsertGene(rnd, gene, i, index, parent, child)
-		case ']':
-			return i
-		default:
-		}
 	}
 	if i == index {
 		child.WriteRune(gene)
-		length := len(parent)
+		length := len(p)
 		for i < length {
-			child.WriteRune(parent[i])
+			child.WriteRune(p[i])
 			i++
 		}
 	}
-	return i
 }
 
 // UpdateGene updates a gene in a genome
-func UpdateGene(rnd *rand.Rand, gene rune, i, index int, parent Program, child *strings.Builder) int {
+func (p Program) UpdateGene(rnd *rand.Rand, gene rune, i, index int, child *strings.Builder) {
 	for i < index {
-		parentGene := parent[i]
+		child.WriteRune(p[i])
 		i++
-		child.WriteRune(parentGene)
-		switch parentGene {
-		case '[':
-			i = UpdateGene(rnd, gene, i, index, parent, child)
-		case ']':
-			return i
-		default:
-		}
 	}
 	if i == index {
 		child.WriteRune(gene)
-		length := len(parent)
+		length := len(p)
 		i++
 		for i < length {
-			child.WriteRune(parent[i])
+			child.WriteRune(p[i])
 			i++
 		}
 	}
-	return i
 }
 
 // DeleteGene deletes a gene from a genome
-func DeleteGene(rnd *rand.Rand, i, index int, parent Program, child *strings.Builder) int {
+func (p Program) DeleteGene(rnd *rand.Rand, i, index int, child *strings.Builder) {
 	for i < index {
-		parentGene := parent[i]
+		child.WriteRune(p[i])
 		i++
-		child.WriteRune(parentGene)
-		switch parentGene {
-		case '[':
-			i = DeleteGene(rnd, i, index, parent, child)
-		case ']':
-			return i
-		default:
-		}
 	}
 	if i == index {
-		length := len(parent)
+		length := len(p)
 		i++
 		for i < length {
-			child.WriteRune(parent[i])
+			child.WriteRune(p[i])
 			i++
 		}
 	}
-	return i
 }
 
 func main() {
@@ -267,7 +240,7 @@ func main() {
 			// insert
 			for _, gene := range Genes {
 				index, child := rnd.Intn(len(genomes[j].Program)+1), strings.Builder{}
-				InsertGene(rnd, gene, 0, index, genomes[j].Program, &child)
+				genomes[j].Program.InsertGene(rnd, gene, 0, index, &child)
 				code := Program([]rune(child.String()))
 				output := code.Execute(length)
 				distance := levenshtein.DistanceForStrings([]rune(output.String()), target, levenshtein.DefaultOptions)
@@ -281,7 +254,7 @@ func main() {
 			// update
 			for _, gene := range Genes {
 				index, child := rnd.Intn(len(genomes[j].Program)+1), strings.Builder{}
-				UpdateGene(rnd, gene, 0, index, genomes[j].Program, &child)
+				genomes[j].Program.UpdateGene(rnd, gene, 0, index, &child)
 				code := Program([]rune(child.String()))
 				output := code.Execute(length)
 				distance := levenshtein.DistanceForStrings([]rune(output.String()), target, levenshtein.DefaultOptions)
@@ -295,7 +268,7 @@ func main() {
 			// delete
 			if len(genomes[j].Program) > 0 {
 				index, child := rnd.Intn(len(genomes[j].Program)), strings.Builder{}
-				DeleteGene(rnd, 0, index, genomes[j].Program, &child)
+				genomes[j].Program.DeleteGene(rnd, 0, index, &child)
 				code := Program([]rune(child.String()))
 				output := code.Execute(length)
 				distance := levenshtein.DistanceForStrings([]rune(output.String()), target, levenshtein.DefaultOptions)

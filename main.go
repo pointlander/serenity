@@ -21,6 +21,8 @@ const (
 	MemorySize = 1024 * 1024
 	// CyclesLimit is the limit on cycles
 	CyclesLimit = 1024 * 1024
+	// PopulationSize population size
+	PopulationSize = 1024
 )
 
 var (
@@ -214,11 +216,34 @@ func (p Program) DeleteGene(rnd *rand.Rand, i, index int, child *strings.Builder
 	}
 }
 
+// Breed breeds two programs
+func Breed(rnd *rand.Rand, a, b Program) (x, y Program) {
+	lengtha, lengthb := len(a), len(b)
+	a1, a2 := rnd.Intn(lengtha), rnd.Intn(lengtha)
+	if a1 > a2 {
+		a1, a2 = a2, a1
+	}
+	b1, b2 := rnd.Intn(lengthb), rnd.Intn(lengthb)
+	if b1 > b2 {
+		b1, b2 = b2, b1
+	}
+
+	x = a[:a1]
+	x = append(x, b[b1:b2]...)
+	x = append(x, a[a2:]...)
+
+	y = b[:b1]
+	y = append(y, a[a1:a2]...)
+	y = append(y, b[b2:]...)
+
+	return
+}
+
 func main() {
 	rnd, target := rand.New(rand.NewSource(1)), []rune("ab")
 	length := len(target)
 	genomes := make([]Genome, 0, 8)
-	for i := 0; i < 1024; i++ {
+	for i := 0; i < PopulationSize; i++ {
 		program := strings.Builder{}
 		Generate(rnd, &program)
 		code := Program(program.String())
@@ -280,6 +305,27 @@ func main() {
 			}
 		}
 
+		for j := 0; j < 10; j++ {
+			a, b := rnd.Intn(10), rnd.Intn(10)
+			x, y := Breed(rnd, genomes[a].Program, genomes[b].Program)
+
+			output := x.Execute(length)
+			distance := levenshtein.DistanceForStrings([]rune(output.String()), target, levenshtein.DefaultOptions)
+			genomes = append(genomes, Genome{
+				Program: x,
+				Output:  output.String(),
+				Fitness: float64(distance),
+			})
+
+			output = y.Execute(length)
+			distance = levenshtein.DistanceForStrings([]rune(output.String()), target, levenshtein.DefaultOptions)
+			genomes = append(genomes, Genome{
+				Program: y,
+				Output:  output.String(),
+				Fitness: float64(distance),
+			})
+		}
+
 		sort.Slice(genomes, func(i, j int) bool {
 			return genomes[i].Fitness < genomes[j].Fitness
 		})
@@ -289,6 +335,6 @@ func main() {
 			fmt.Println(string(genomes[0].Program))
 			break
 		}
-		genomes = genomes[:1024]
+		genomes = genomes[:PopulationSize]
 	}
 }

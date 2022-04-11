@@ -162,9 +162,11 @@ func Generate(rnd *rand.Rand, program *strings.Builder) {
 
 // Genome is a genome
 type Genome struct {
+	ID      int
 	Program Program
 	Output  string
 	Fitness float64
+	Parents []int
 }
 
 // InsertGene inserts a gene into a genome
@@ -240,7 +242,7 @@ func Breed(rnd *rand.Rand, a, b Program) (x, y Program) {
 }
 
 func main() {
-	rnd, target := rand.New(rand.NewSource(1)), []rune("ab")
+	rnd, target, id := rand.New(rand.NewSource(1)), []rune("ab"), 1
 	length := len(target)
 	genomes := make([]Genome, 0, 8)
 	for i := 0; i < PopulationSize; i++ {
@@ -250,10 +252,13 @@ func main() {
 		output := code.Execute(length)
 		distance := levenshtein.DistanceForStrings([]rune(output.String()), target, levenshtein.DefaultOptions)
 		genomes = append(genomes, Genome{
+			ID:      id,
 			Program: code,
 			Output:  output.String(),
 			Fitness: float64(distance),
+			Parents: []int{0},
 		})
+		id++
 	}
 	sort.Slice(genomes, func(i, j int) bool {
 		return genomes[i].Fitness < genomes[j].Fitness
@@ -270,10 +275,13 @@ func main() {
 				output := code.Execute(length)
 				distance := levenshtein.DistanceForStrings([]rune(output.String()), target, levenshtein.DefaultOptions)
 				genomes = append(genomes, Genome{
+					ID:      id,
 					Program: code,
 					Output:  output.String(),
 					Fitness: float64(distance),
+					Parents: []int{genomes[j].ID},
 				})
+				id++
 			}
 
 			// update
@@ -284,10 +292,13 @@ func main() {
 				output := code.Execute(length)
 				distance := levenshtein.DistanceForStrings([]rune(output.String()), target, levenshtein.DefaultOptions)
 				genomes = append(genomes, Genome{
+					ID:      id,
 					Program: code,
 					Output:  output.String(),
 					Fitness: float64(distance),
+					Parents: []int{genomes[j].ID},
 				})
+				id++
 			}
 
 			// delete
@@ -298,10 +309,13 @@ func main() {
 				output := code.Execute(length)
 				distance := levenshtein.DistanceForStrings([]rune(output.String()), target, levenshtein.DefaultOptions)
 				genomes = append(genomes, Genome{
+					ID:      id,
 					Program: code,
 					Output:  output.String(),
 					Fitness: float64(distance),
+					Parents: []int{genomes[j].ID},
 				})
+				id++
 			}
 		}
 
@@ -312,29 +326,41 @@ func main() {
 			output := x.Execute(length)
 			distance := levenshtein.DistanceForStrings([]rune(output.String()), target, levenshtein.DefaultOptions)
 			genomes = append(genomes, Genome{
+				ID:      id,
 				Program: x,
 				Output:  output.String(),
 				Fitness: float64(distance),
+				Parents: []int{genomes[a].ID, genomes[b].ID},
 			})
+			id++
 
 			output = y.Execute(length)
 			distance = levenshtein.DistanceForStrings([]rune(output.String()), target, levenshtein.DefaultOptions)
 			genomes = append(genomes, Genome{
+				ID:      id,
 				Program: y,
 				Output:  output.String(),
 				Fitness: float64(distance),
+				Parents: []int{genomes[a].ID, genomes[b].ID},
 			})
+			id++
 		}
 
 		sort.Slice(genomes, func(i, j int) bool {
 			return genomes[i].Fitness < genomes[j].Fitness
 		})
+		fitness := make(map[int]float64, len(genomes))
+		for _, genome := range genomes {
+			fitness[genome.ID] = genome.Fitness
+		}
+
 		fmt.Println(i, genomes[0].Fitness)
 		if genomes[0].Fitness == 0 {
 			fmt.Println(genomes[0].Output)
 			fmt.Println(string(genomes[0].Program))
 			break
 		}
+
 		genomes = genomes[:PopulationSize]
 	}
 }

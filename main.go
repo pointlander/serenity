@@ -25,7 +25,7 @@ const (
 
 var (
 	// Genes are the genes
-	Genes = [...]rune{'+', '-', '>', '<', '.', '['}
+	Genes = [...]rune{'+', '-', '>', '<', '.', '[', ']'}
 )
 
 // Program is a program
@@ -102,7 +102,7 @@ func (p Program) findMatchingForward(position int) int {
 		}
 	}
 
-	return -1
+	return length - 1
 }
 
 func (p Program) findMatchingBackward(position int) int {
@@ -167,9 +167,6 @@ type Genome struct {
 
 // InsertGene inserts a gene into a genome
 func InsertGene(rnd *rand.Rand, gene rune, i, index int, parent Program, child *strings.Builder) int {
-	if gene == '[' {
-		return InsertBlockGene(rnd, i, -1, index, parent, child)
-	}
 	for i < index {
 		parentGene := parent[i]
 		i++
@@ -193,49 +190,8 @@ func InsertGene(rnd *rand.Rand, gene rune, i, index int, parent Program, child *
 	return i
 }
 
-// InsertBlockGene inserts a block gene into a genome
-func InsertBlockGene(rnd *rand.Rand, i, start, end int, parent Program, child *strings.Builder) int {
-	length := len(parent)
-	for i < length {
-		parentGene := parent[i]
-		switch parentGene {
-		case '[':
-			if i == start {
-				child.WriteRune('[')
-				child.WriteRune(parentGene)
-				i = InsertBlockGene(rnd, i+1, start, i+rnd.Intn(length-start)+1, parent, child)
-				break
-			}
-			child.WriteRune(parentGene)
-			i = InsertBlockGene(rnd, i+1, start, -1, parent, child)
-		case ']':
-			if end > -1 {
-				child.WriteRune(']')
-			}
-			child.WriteRune(parentGene)
-			return i + 1
-		default:
-			if i == start {
-				child.WriteRune('[')
-				end = i + rnd.Intn(length-start) + 1
-			} else if i == end {
-				child.WriteRune(']')
-			}
-			child.WriteRune(parentGene)
-			i++
-		}
-	}
-	if end >= length {
-		child.WriteRune(']')
-	}
-	return i
-}
-
 // UpdateGene updates a gene in a genome
 func UpdateGene(rnd *rand.Rand, gene rune, i, index int, parent Program, child *strings.Builder) int {
-	if gene == '[' {
-		return UpdateBlockGene(rnd, i, -1, index, parent, child)
-	}
 	for i < index {
 		parentGene := parent[i]
 		i++
@@ -260,50 +216,8 @@ func UpdateGene(rnd *rand.Rand, gene rune, i, index int, parent Program, child *
 	return i
 }
 
-// UpdateBlockGene updates a block gene in a genome
-func UpdateBlockGene(rnd *rand.Rand, i, start, end int, parent Program, child *strings.Builder) int {
-	length := len(parent)
-	for i < length {
-		parentGene := parent[i]
-		switch parentGene {
-		case '[':
-			if i == start {
-				child.WriteRune('[')
-				i = UpdateBlockGene(rnd, i+1, start, i+rnd.Intn(length-start)+1, parent, child)
-				break
-			}
-			child.WriteRune(parentGene)
-			i = UpdateBlockGene(rnd, i+1, start, -1, parent, child)
-		case ']':
-			child.WriteRune(parentGene)
-			return i + 1
-		default:
-			if i == start {
-				child.WriteRune('[')
-				end = i + rnd.Intn(length-start) + 1
-			} else if i == end {
-				child.WriteRune(']')
-				child.WriteRune(parentGene)
-			} else {
-				child.WriteRune(parentGene)
-			}
-			i++
-		}
-	}
-	if end >= length {
-		child.WriteRune(']')
-	}
-	return i
-}
-
 // DeleteGene deletes a gene from a genome
 func DeleteGene(rnd *rand.Rand, i, index int, parent Program, child *strings.Builder) int {
-	length := len(parent)
-	if parent[index] == '[' {
-		return DeleteBlockGene(rnd, i, -1, index, parent, child)
-	} else if parent[index] == ']' {
-		return length
-	}
 	for i < index {
 		parentGene := parent[i]
 		i++
@@ -317,36 +231,10 @@ func DeleteGene(rnd *rand.Rand, i, index int, parent Program, child *strings.Bui
 		}
 	}
 	if i == index {
+		length := len(parent)
 		i++
 		for i < length {
 			child.WriteRune(parent[i])
-			i++
-		}
-	}
-	return i
-}
-
-// DeleteBlockGene deletes a block gene from a genome
-func DeleteBlockGene(rnd *rand.Rand, i, start, end int, parent Program, child *strings.Builder) int {
-	length := len(parent)
-	for i < length {
-		parentGene := parent[i]
-		switch parentGene {
-		case '[':
-			if i == start {
-				i = DeleteBlockGene(rnd, i+1, start, 0, parent, child)
-				break
-			}
-			child.WriteRune(parentGene)
-			i = DeleteBlockGene(rnd, i+1, start, -1, parent, child)
-		case ']':
-			if end > -1 {
-				return i + 1
-			}
-			child.WriteRune(parentGene)
-			return i + 1
-		default:
-			child.WriteRune(parentGene)
 			i++
 		}
 	}

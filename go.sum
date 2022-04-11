@@ -1,2 +1,4 @@
+github.com/pointlander/pagerank v0.0.0-20210619221740-830548a59275 h1:KF7JT+ypSI82OfOEGVdNBM31o5+7NuFuuenR3quajVc=
+github.com/pointlander/pagerank v0.0.0-20210619221740-830548a59275/go.mod h1:9UawvzpkRT8gwNLM8E8JdGnn6p1kHqEdV+P8TlDZibk=
 github.com/texttheater/golang-levenshtein/levenshtein v0.0.0-20200805054039-cae8b0eaed6c h1:HelZ2kAFadG0La9d+4htN4HzQ68Bm2iM9qKMSMES6xg=
 github.com/texttheater/golang-levenshtein/levenshtein v0.0.0-20200805054039-cae8b0eaed6c/go.mod h1:JlzghshsemAMDGZLytTFY8C1JQxQPhnatWqNwUXjggo=
